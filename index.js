@@ -139,7 +139,7 @@ server.get("/", async (_, res) => {
     if (HEALTH_CHECK_URL) {
       await isReachable(HEALTH_CHECK_URL);
     }
-    res.status(200).send(JSON.stringify(result));
+    res.status(200).send(JSON.stringify(data));
   } catch (err) {
     console.log(err);
     res.status(400).send(`${err}`);
