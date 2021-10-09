@@ -37,7 +37,7 @@ const app = async () => {
     console.log("Launch browser");
     if (NODE_ENV === "development") {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: ["--no-sandbox"],
       });
     } else {
