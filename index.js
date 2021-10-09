@@ -76,6 +76,7 @@ const app = async () => {
     await emailEle.type(HACKMD_EMAIL);
     await passwordEle.type(HACKMD_PASSWORD);
 
+    await page.waitForSelector('input:enabled[type=submit]')
     const submitEle = await page.$('input[type="submit"]');
     await submitEle.click();
 
