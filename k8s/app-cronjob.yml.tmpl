@@ -16,5 +16,5 @@ spec:
             image: alpine:3
             imagePullPolicy: IfNotPresent
             command: ["/bin/sh"]
-            args: ["-c", "apk update && apk --no-cache add openssl wget && wget --tries=1 --timeout=600 -S -O- app-svc:$PORT"]
+            args: ["-c", "apk update && apk --no-cache add openssl wget && wget --tries=1 --timeout=600 -S -O- app-svc:3000"]
           restartPolicy: Never

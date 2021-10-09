@@ -20,7 +20,7 @@ spec:
       - name: main
         image: $DOCKER_IMAGE:$COMMIT_SHA
         ports:
-        - containerPort: $PORT
+        - containerPort: 3000
         envFrom:
         - configMapRef:
             name: app-cm
@@ -37,5 +37,5 @@ spec:
     app: main
   ports:
   - protocol: TCP
-    port: $PORT
-    targetPort: $PORT
+    port: 3000
+    targetPort: 3000
