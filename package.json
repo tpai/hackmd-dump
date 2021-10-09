@@ -1,0 +1,19 @@
+{
+  "name": "hackmd-bak",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Tony Pai <tony77794@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "NODE_ENV=development node index.js",
+    "deploy": "./scripts/deploy.sh"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1004.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "is-reachable": "^5.0.0",
+    "isomorphic-fetch": "^3.0.0",
+    "puppeteer": "^10.4.0"
+  }
+}

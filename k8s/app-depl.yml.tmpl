@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-depl
+  namespace: $K8S_NAMESPACE
+  labels:
+    app: main
+spec:
+  revisionHistoryLimit: 3
+  replicas: 1
+  selector:
+    matchLabels:
+      app: main
+  template:
+    metadata:
+      labels:
+        app: main
+    spec:
+      containers:
+      - name: main
+        image: $DOCKER_IMAGE:$COMMIT_SHA
+        ports:
+        - containerPort: $PORT
+        envFrom:
+        - configMapRef:
+            name: app-cm
+        - secretRef:
+            name: app-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-svc
+  namespace: $K8S_NAMESPACE
+spec:
+  selector:
+    app: main
+  ports:
+  - protocol: TCP
+    port: $PORT
+    targetPort: $PORT

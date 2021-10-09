@@ -1,0 +1,34 @@
+version: '3.5'
+
+services:
+  net:
+    image: alpine:3.7
+    network_mode: bridge
+    ports:
+      - 3000:3000
+    command: tail -f /dev/null
+    restart: always
+  app:
+    build:
+      context: .
+    network_mode: service:net
+    env_file:
+      - .env
+    depends_on:
+      - chrome
+  chrome:
+    image: alpeware/chrome-headless-trunk:latest
+    network_mode: service:net
+    volumes:
+      - /tmp/chromedata/:/data
+  cronjob:
+    image: mcuadros/ofelia:latest
+    network_mode: service:net
+    depends_on:
+      - app
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: daemon --docker
+    labels:
+      ofelia.job-local.my-job.schedule: "@every 1d"
+      ofelia.job-local.my-job.command: "wget -O/dev/null -q 0.0.0.0:3000"
