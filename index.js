@@ -113,6 +113,8 @@ const app = async () => {
   } catch (err) {
     throw new Error(err);
   } finally {
+    await page.screenshot({ path: 'error.png' });
+    console.log('Save a screenshot');
     await page.close();
     console.log("Close page");
   }
