@@ -6,21 +6,22 @@ services:
     network_mode: bridge
     ports:
       - 3000:3000
+      - 9222:9222
     command: tail -f /dev/null
     restart: always
   app:
     build:
       context: .
     network_mode: service:net
+    environment:
+      - NODE_ENV=production
     env_file:
       - .env
     depends_on:
       - chrome
   chrome:
-    image: alpeware/chrome-headless-trunk:latest
+    image: alpeware/chrome-headless-trunk:rev-851733
     network_mode: service:net
-    volumes:
-      - /tmp/chromedata/:/data
   cronjob:
     image: mcuadros/ofelia:latest
     network_mode: service:net
