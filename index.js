@@ -71,23 +71,26 @@ const app = async () => {
     );
     await page.goto(HACKMD_LOGIN_PAGE);
 
-    console.log('Type email and password');
-    const emailEle = await page.$('input[name="email"]');
-    const passwordEle = await page.$('input[name="password"]');
-    await emailEle.type(HACKMD_EMAIL);
-    await passwordEle.type(HACKMD_PASSWORD);
-
-    console.log('Click submit');
-    await page.waitForSelector('input:enabled[type=submit]')
-    const submitEle = await page.$('input[type="submit"]');
-    await submitEle.click();
-
-    await page.waitForNavigation();
-
     console.log('Retrieve cookies');
     const cookies = await page.cookies();
-    const sessionId = cookies.find((cookie) => cookie.name === COOKIE_NAME)
+    let sessionId = cookies.find((cookie) => cookie.name === COOKIE_NAME)
       .value;
+    console.log(`${COOKIE_NAME}=${sessionId}`);
+
+    if (typeof sessionId === 'undefined') {
+      console.log('Type email and password');
+      const emailEle = await page.$('input[name="email"]');
+      const passwordEle = await page.$('input[name="password"]');
+      await emailEle.type(HACKMD_EMAIL);
+      await passwordEle.type(HACKMD_PASSWORD);
+
+      console.log('Click submit');
+      await page.waitForSelector('input:enabled[type=submit]')
+      const submitEle = await page.$('input[type="submit"]');
+      await submitEle.click();
+
+      await page.waitForNavigation();
+    }
 
     console.log('Download backup');
     const buffer = await fetch(HACKMD_BACKUP_LINK, {
