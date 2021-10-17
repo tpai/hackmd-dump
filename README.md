@@ -1,7 +1,7 @@
 Hackmd Dump
 ===
 
-You can schedule a routing backup job for hackmd.
+You can schedule a routine backup job for hackmd.
 
 ## Usage
 
