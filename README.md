@@ -1,26 +1,20 @@
 Hackmd Dump
 ===
 
-You can schedule a routine backup job for hackmd.
+A backup tool for HackMD using API token.
+
+## Features
+
+* Support S3 backup
+* Ensure API calls under rate limit
+* Support [healthchecks.io](https://healthchecks.io)
 
 ## Usage
 
-Define env variables
+```bash
+# install dependencies
+yarn
 
-```
-cp .env.example .env
-```
-
-Launch service in local
-
-```
-docker-compose up
-```
-
-## Development
-
-Execute app in dev mode
-
-```
-yarn && yarn dev
+# launch dev server
+yarn dev
 ```
