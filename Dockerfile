@@ -1,17 +1,10 @@
-FROM node:14-alpine
-
+FROM node:20 AS build-env
+COPY . /app
 WORKDIR /app
 
-COPY package.json .
-COPY yarn.lock .
+RUN yarn install --production
 
-# Tell puppeteer to skip installing chrome
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
-# Install dependencies
-RUN yarn install --frozen-lockfile --production
-
-# Add required assets
-COPY index.js .
-
-CMD ["node", "index.js"]
+FROM gcr.io/distroless/nodejs20-debian11
+COPY --from=build-env /app /app
+WORKDIR /app
+CMD ["index.js"]

@@ -9,11 +9,11 @@
     "deploy": "./scripts/deploy.sh"
   },
   "dependencies": {
-    "aws-sdk": "^2.1004.0",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "is-reachable": "^5.0.0",
-    "isomorphic-fetch": "^3.0.0",
-    "puppeteer": "^10.4.0"
+    "@aws-sdk/client-s3": "^3.598.0",
+    "archiver": "^7.0.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "is-reachable": "^5.2.1",
+    "isomorphic-fetch": "^3.0.0"
   }
 }

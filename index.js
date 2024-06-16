@@ -1,140 +1,87 @@
 require("dotenv").config();
 
 const fs = require("fs");
-const dns = require("dns").promises;
+const archiver = require('archiver');
 const isReachable = require("is-reachable");
-const puppeteer = require("puppeteer");
 const fetch = require("isomorphic-fetch");
-const AWS = require("aws-sdk");
-AWS.config.update({ region: "ap-southeast-1" });
+const { S3 } = require("@aws-sdk/client-s3");
 
-const s3 = new AWS.S3();
+const s3 = new S3({ region: "ap-southeast-1" });
 
-const HACKMD_LOGIN_PAGE = "https://hackmd.io/login";
-const HACKMD_BACKUP_LINK = "https://hackmd.io/exportAllNotes";
-const COOKIE_NAME = "connect.sid";
+const HACKMD_API_URL = "https://api.hackmd.io/v1";
 
 const {
   NODE_ENV,
-  CHROME_HOST,
   HEALTH_CHECK_URL,
-  HACKMD_EMAIL,
-  HACKMD_PASSWORD,
+  HACKMD_API_TOKEN,
 } = process.env;
 
-const checkAlive = async (url) => {
-  const isReached = await isReachable(url);
-  if (!isReached) {
-    return await checkAlive();
-  }
-  return true;
-};
 
-let page;
 const app = async () => {
-  let browser;
   try {
-    console.log("Launch browser");
-    if (NODE_ENV === "development") {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox"],
-      });
-    } else {
-      console.log(`CHROME_HOST=${CHROME_HOST}`);
-
-      const { address } = await dns.lookup(CHROME_HOST, {
-        family: 4,
-        hints: dns.ADDRCONFIG,
-      });
-
-      console.log(`IP_ADDRESS=${address}`);
-      console.log("Check browser health...");
-      const isAlive = await checkAlive(`http://${address}:9222`);
-      if (!isAlive) {
-        console.log("Browser is dead!");
-        return;
-      }
-
-      browser = await puppeteer.connect({
-        browserURL: `http://${address}:9222`,
-      });
-    }
-    console.log(await browser.version());
-
-    console.log(`Open page: ${HACKMD_LOGIN_PAGE}`);
-    page = await browser.newPage();
-    page.setDefaultNavigationTimeout(0);
-    await page.setViewport({ width: 1280, height: 720 });
-    await page.setUserAgent(
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36"
-    );
-    await page.goto(HACKMD_LOGIN_PAGE);
-
-    console.log('Retrieve cookies');
-    const cookies = await page.cookies();
-    let sessionId = cookies.find((cookie) => cookie.name === COOKIE_NAME)
-      .value;
-    console.log(`${COOKIE_NAME}=${sessionId}`);
-
-    if (typeof sessionId === 'undefined') {
-      console.log('Type email and password');
-      const emailEle = await page.$('input[name="email"]');
-      const passwordEle = await page.$('input[name="password"]');
-      await emailEle.type(HACKMD_EMAIL);
-      await passwordEle.type(HACKMD_PASSWORD);
-
-      console.log('Click submit');
-      await page.waitForSelector('input:enabled[type=submit]')
-      const submitEle = await page.$('input[type="submit"]');
-      await submitEle.click();
-
-      await page.waitForNavigation();
-    }
-
-    console.log('Download backup');
-    const buffer = await fetch(HACKMD_BACKUP_LINK, {
-      headers: {
-        Cookie: `connect.sid=${sessionId};`,
-      },
-    }).then((res) => res.buffer());
-
+    // define archiver
     const filename = `${new Date().toISOString()}.zip`;
-
-    if (NODE_ENV === "development") {
-      fs.writeFileSync(filename, buffer);
-    }
-
-    console.log('Send to S3');
-    return await new Promise((resolve) => {
-      s3.putObject(
-        {
-          Bucket: "hackmd-bak",
-          Key: filename,
-          Body: buffer,
-        },
-        function (err, data) {
-          resolve({ err, data });
+    const output = fs.createWriteStream(filename);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    output.on('close', function() {
+      console.log('Notes archived');
+      fs.readFile(filename, (err, buffer) => {
+        if (err) {
+          console.error('Error reading file:', err);
+          return;
         }
-      );
+        console.log('Uploading file...');
+        new Promise((resolve) => {
+          s3.putObject(
+            {
+              Bucket: "hackmd-bak",
+              Key: filename,
+              Body: buffer,
+            },
+            (_, data) => {
+              console.log('File uploaded');
+              resolve(data);
+            }
+          );
+        });
+      });
     });
+    archive.on('error', function(err) {
+      throw err;
+    });
+    archive.pipe(output);
+
+    console.log("Downloading notes...");
+    const response = await fetch(`${HACKMD_API_URL}/notes`, {
+      headers: {
+        'Authorization': `Bearer ${HACKMD_API_TOKEN}`
+      }
+    });
+    const data = await response.json();
+    for (const note of data) {
+      console.log(`${note.title}.md`);
+      const noteResponse = await fetch(`${HACKMD_API_URL}/notes/${note.id}`, {
+        headers: {
+          'Authorization': `Bearer ${HACKMD_API_TOKEN}`
+        }
+      });
+      const noteData = await noteResponse.json();
+      archive.append(noteData.content, { name: `${note.title}.md` });
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    archive.finalize();
+    console.log("Archiving notes...");
   } catch (err) {
     throw new Error(err);
-  } finally {
-    await page.screenshot({ path: 'error.png' });
-    console.log('Save a screenshot');
-    await page.close();
-    console.log("Close page");
   }
 };
 
 if (NODE_ENV === "development") {
-  (async function () {
+  (async () => {
     try {
-      const data = await app();
-      console.log(data);
+      await app();
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   })();
 }
@@ -145,12 +92,11 @@ const port = "3000";
 
 server.get("/", async (_, res) => {
   try {
-    const data = await app();
-    console.log(data);
+    await app();
     if (HEALTH_CHECK_URL) {
       await isReachable(HEALTH_CHECK_URL);
     }
-    res.status(200).send(JSON.stringify(data));
+    res.status(200).send({success: 1});
   } catch (err) {
     console.log(err);
     res.status(400).send(`${err}`);

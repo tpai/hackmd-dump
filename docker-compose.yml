@@ -19,9 +19,6 @@ services:
       - .env
     depends_on:
       - chrome
-  chrome:
-    image: alpeware/chrome-headless-trunk:rev-851733
-    network_mode: service:net
   cronjob:
     image: mcuadros/ofelia:latest
     network_mode: service:net
@@ -31,5 +28,5 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     command: daemon --docker
     labels:
-      ofelia.job-local.my-job.schedule: "@every 1d"
+      ofelia.job-local.my-job.schedule: "@every 1w"
       ofelia.job-local.my-job.command: "wget -O/dev/null -q 0.0.0.0:3000"
