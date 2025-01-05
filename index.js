@@ -60,14 +60,18 @@ const app = async () => {
     const data = await response.json();
     for (const note of data) {
       console.log(`${note.title}.md`);
-      const noteResponse = await fetch(`${HACKMD_API_URL}/notes/${note.id}`, {
-        headers: {
-          'Authorization': `Bearer ${HACKMD_API_TOKEN}`
-        }
-      });
-      const noteData = await noteResponse.json();
-      archive.append(noteData.content, { name: `${note.title}.md` });
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      try {
+        const noteResponse = await fetch(`${HACKMD_API_URL}/notes/${note.id}`, {
+          headers: {
+            'Authorization': `Bearer ${HACKMD_API_TOKEN}`
+          }
+        });
+        const noteData = await noteResponse.json();
+        archive.append(noteData.content, { name: `${note.title}.md` });
+      } catch (e) {
+        console.error(`Failed to process note ${note.title}:`, e);
+      }
+      await new Promise(resolve => setTimeout(resolve, 3500));
     }
     archive.finalize();
     console.log("Archiving notes...");
